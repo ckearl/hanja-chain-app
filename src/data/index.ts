@@ -6,5 +6,5 @@ import { type DataSource } from './types';
 
 export const data: DataSource = sqliteSource;
 export { attachDatabase, DB_NAME } from './sqlite';
-export { decompose } from './hangul';
+export { decompose, isHanja } from './hangul';
 export * from './types';
