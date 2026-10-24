@@ -2,9 +2,8 @@
 import { Platform, Pressable, Text, type TextProps, View, type ViewProps } from 'react-native';
 
 import { alpha, FONT, RADIUS, SP } from '@/theme/colors';
+import { serif, serifBold } from '@/theme/fonts';
 import { useTheme } from '@/theme/ThemeProvider';
-
-const SERIF = Platform.select({ ios: 'ui-serif', android: 'serif', default: 'serif' });
 
 type TxtKind = 'body' | 'secondary' | 'tertiary' | 'label' | 'title' | 'mono';
 
@@ -19,7 +18,7 @@ export function Txt({
     secondary: { color: t.text2, fontSize: 14 },
     tertiary: { color: t.text3, fontSize: 12 },
     label: { color: t.text2, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' as const },
-    title: { color: t.text, fontSize: 26, fontWeight: '700' as const },
+    title: { color: t.text, fontSize: 26, ...serifBold() },
     mono: { color: t.text2, fontSize: 13, fontFamily: Platform.select({ ios: 'ui-monospace', default: 'monospace' }) },
   };
   return <Text style={[map[kind], style]} {...rest} />;
@@ -36,7 +35,7 @@ export function Hanja({
   const { t } = useTheme();
   return (
     <Text
-      style={[{ fontFamily: SERIF, fontSize: size, color: color ?? t.ink, lineHeight: size * 1.06 }, style]}
+      style={[{ fontFamily: serif(), fontSize: size, color: color ?? t.ink, lineHeight: size * 1.06 }, style]}
       {...rest}>
       {char}
     </Text>

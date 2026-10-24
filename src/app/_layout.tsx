@@ -1,9 +1,11 @@
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { DB_NAME, initDatabases } from '@/data';
+import { FONT_ASSETS } from '@/theme/fonts';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 // Copied from the bundle into the app's documents dir on first launch. DB_NAME
@@ -31,6 +33,11 @@ function RootStack() {
 }
 
 export default function RootLayout() {
+  // Like SQLiteProvider, render nothing until ready. On failure, carry on: the
+  // ui primitives fall back to the system serif.
+  const [fontsLoaded, fontError] = useFonts(FONT_ASSETS);
+  if (!fontsLoaded && !fontError) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SQLiteProvider databaseName={DB_NAME} assetSource={DB_ASSET} onInit={initDatabases}>
