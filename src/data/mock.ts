@@ -226,6 +226,12 @@ export const mockSource: DataSource = {
       .sort((a, b) => a.primarySound.localeCompare(b.primarySound, 'ko'));
   },
 
+  async galleryIndex() {
+    return [...CHARS.values()]
+      .map((ch) => ({ hanja: ch.hanja, primarySound: ch.primarySound, meaningKo: ch.meaningKo }))
+      .sort((a, b) => a.primarySound.localeCompare(b.primarySound, 'ko') || a.hanja.localeCompare(b.hanja));
+  },
+
   async chainNeighbors(hanja, excludeWord) {
     return (BY_HANJA.get(hanja) ?? [])
       .filter((c) => c.wordKo !== excludeWord)

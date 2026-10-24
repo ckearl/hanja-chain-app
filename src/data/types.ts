@@ -55,6 +55,14 @@ export type GalleryFilter = {
   syllable?: string | null; // full syllable
 };
 
+// Lightweight row for browsing every character at once (Gallery grid + its
+// filter chips) — no readings join, so all ~1,800 load in one cheap query.
+export type GalleryEntry = {
+  hanja: string;
+  primarySound: string;
+  meaningKo: string | null;
+};
+
 // The interface every screen depends on. Async so the SQLite implementation
 // (queries) is a drop-in replacement for the mock.
 export interface DataSource {
@@ -62,6 +70,8 @@ export interface DataSource {
   compoundsForChar(hanja: string, limit?: number): Promise<Compound[]>;
   search(query: string, mode?: SearchMode): Promise<HanjaChar[]>;
   charactersByReading(filter: GalleryFilter): Promise<HanjaChar[]>;
+  // Every character as a GalleryEntry, ordered by primary sound (가나다) then hanja.
+  galleryIndex(): Promise<GalleryEntry[]>;
   // Words that share the given Hanja (excluding `excludeWord`) — Chains edges.
   chainNeighbors(hanja: string, excludeWord?: string): Promise<ChainWord[]>;
   toChainWord(wordKo: string): Promise<ChainWord | undefined>;
