@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Chip, Hanja, Surface, Txt } from '@/components/ui';
-import { data, type Compound, type HanjaChar } from '@/data';
+import { data, type Compound, type HanjaChar, user } from '@/data';
 import { useQuery } from '@/hooks/useQuery';
+import { useUserQuery } from '@/hooks/useUserQuery';
 import { alpha, FONT, RADIUS, SP } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -15,6 +17,14 @@ export default function CharacterDetail() {
 
   const { data: char, loading } = useQuery<HanjaChar | undefined>(() => data.getCharacter(key), [key]);
   const { data: compounds } = useQuery<Compound[]>(() => data.compoundsForChar(key), [key]);
+  const { data: saved } = useUserQuery(() => user.isSaved(key), [key]);
+
+  // Log the visit (feeds Search's "Recently viewed" and the streak) once the
+  // character is known to exist.
+  const found = char?.hanja;
+  useEffect(() => {
+    if (found) user.recordView(found).catch((err) => console.error('[recordView]', err));
+  }, [found]);
 
   if (loading) return <View style={{ flex: 1, backgroundColor: t.bg }} />;
   if (!char) {
@@ -36,6 +46,7 @@ export default function CharacterDetail() {
     <ScrollView style={{ flex: 1, backgroundColor: t.bg }} contentContainerStyle={{ padding: SP.lg, gap: SP.lg }}>
       {/* Hero */}
       <View style={{ alignItems: 'center', gap: SP.sm, paddingVertical: SP.lg }}>
+        <SaveToggle hanja={char.hanja} saved={!!saved} />
         <Hanja char={char.hanja} size={FONT.hanjaHero} />
         <Txt style={{ fontSize: 22, marginTop: SP.sm }}>
           {char.meaningKo} {char.primarySound}
@@ -78,6 +89,34 @@ export default function CharacterDetail() {
         ) : null}
       </View>
     </ScrollView>
+  );
+}
+
+function SaveToggle({ hanja, saved }: { hanja: string; saved: boolean }) {
+  const { t } = useTheme();
+  return (
+    <Pressable
+      onPress={() => user.toggleSaved(hanja).catch((err) => console.error('[toggleSaved]', err))}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={saved ? `${hanja} 저장 해제` : `${hanja} 저장`}
+      accessibilityState={{ selected: saved }}
+      style={({ pressed }) => ({
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: 40,
+        height: 40,
+        borderRadius: RADIUS.pill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: saved ? t.accent : t.border2,
+        backgroundColor: saved ? alpha(t.accent, 0.16) : 'transparent',
+        opacity: pressed ? 0.6 : 1,
+      })}>
+      <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={18} color={saved ? t.accent : t.text2} />
+    </Pressable>
   );
 }
 

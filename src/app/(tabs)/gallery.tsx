@@ -5,9 +5,8 @@
 // filter also removes everything below it. The whole index (~1,800 rows, no
 // readings join) loads once; filtering and chip derivation happen in memory.
 //
-// User state ("saved" characters) doesn't exist yet. GalleryBrowser takes an
-// `only` set as the seam: once saving lands, pass the saved Hanja to narrow
-// the browser to them. Until then the tab browses everything.
+// A 전체 / 저장 toggle narrows the browser to saved characters via the `only`
+// set; it re-derives live as characters are saved elsewhere (useUserQuery).
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -16,8 +15,9 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, useWindowDimensions
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Hanja, Txt } from '@/components/ui';
-import { data, decompose, type GalleryEntry } from '@/data';
+import { data, decompose, type GalleryEntry, user } from '@/data';
 import { useQuery } from '@/hooks/useQuery';
+import { useUserQuery } from '@/hooks/useUserQuery';
 import { alpha, RADIUS, SP } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -41,12 +41,34 @@ const GAP = SP.sm;
 type Row = GalleryEntry & { cho: string | null; jung: string | null; vowel: string };
 type Opt = { value: string; count: number; label?: string };
 
+type Scope = 'all' | 'saved';
+
 export default function GalleryScreen() {
-  return <GalleryBrowser />;
+  const [scope, setScope] = useState<Scope>('all');
+  const { data: saved } = useUserQuery(() => user.savedHanja(), []);
+  const savedKey = (saved ?? []).join('');
+  // Stable while the saved list is unchanged (a recordView elsewhere re-runs
+  // the query but shouldn't re-filter the grid).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const savedSet = useMemo(() => new Set(saved ?? []), [savedKey]);
+  return (
+    <GalleryBrowser
+      only={scope === 'saved' ? savedSet : undefined}
+      scope={scope}
+      onScope={setScope}
+    />
+  );
 }
 
-// TODO(user-state): pass `only={savedHanja}` once saving exists.
-function GalleryBrowser({ only }: { only?: ReadonlySet<string> }) {
+function GalleryBrowser({
+  only,
+  scope: listScope,
+  onScope,
+}: {
+  only?: ReadonlySet<string>;
+  scope: Scope;
+  onScope: (s: Scope) => void;
+}) {
   const { t } = useTheme();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -63,6 +85,16 @@ function GalleryBrowser({ only }: { only?: ReadonlySet<string> }) {
   const [cho, setCho] = useState<string | null>(null);
   const [jung, setJung] = useState<string | null>(null);
   const [syl, setSyl] = useState<string | null>(null);
+
+  // Switching 전체/저장 clears the filters — a pinned 초성 may not exist among
+  // saved characters. (Adjust-during-render, so there's no stale frame.)
+  const [prevScope, setPrevScope] = useState(listScope);
+  if (prevScope !== listScope) {
+    setPrevScope(listScope);
+    setCho(null);
+    setJung(null);
+    setSyl(null);
+  }
 
   // Cumulative: picking/clearing a level resets everything below it.
   const pickCho = (c: string | null) => {
@@ -106,9 +138,12 @@ function GalleryBrowser({ only }: { only?: ReadonlySet<string> }) {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={{ paddingHorizontal: PAD, paddingTop: SP.sm, gap: SP.xs }}>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
-          <Txt kind="title">서랍</Txt>
-          <Txt kind="label">Gallery · {rows.length.toLocaleString()}자</Txt>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.sm }}>
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', gap: SP.sm }}>
+            <Txt kind="title">서랍</Txt>
+            <Txt kind="label">Gallery · {rows.length.toLocaleString()}자</Txt>
+          </View>
+          <ScopeToggle value={listScope} onChange={onScope} />
         </View>
       </View>
 
@@ -159,7 +194,11 @@ function GalleryBrowser({ only }: { only?: ReadonlySet<string> }) {
           removeClippedSubviews
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingTop: SP.xxl }}>
-              <Txt kind="secondary">이 조건에 맞는 한자가 없어요.</Txt>
+              <Txt kind="secondary">
+                {only && only.size === 0
+                  ? '아직 저장한 한자가 없어요. 상세 화면에서 북마크를 눌러 보세요.'
+                  : '이 조건에 맞는 한자가 없어요.'}
+              </Txt>
             </View>
           }
           style={{ flex: 1 }}
@@ -178,6 +217,46 @@ function countBy(rows: Row[], key: (r: Row) => string | null, order?: string[]):
   }
   const keys = order ? order.filter((k) => counts.has(k)) : [...counts.keys()];
   return keys.map((k) => ({ value: k, count: counts.get(k)! }));
+}
+
+// Segmented 전체 / 저장 switch.
+function ScopeToggle({ value, onChange }: { value: Scope; onChange: (s: Scope) => void }) {
+  const { t } = useTheme();
+  const opts: { id: Scope; label: string }[] = [
+    { id: 'all', label: '전체' },
+    { id: 'saved', label: '저장' },
+  ];
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        padding: 2,
+        borderRadius: RADIUS.pill,
+        borderWidth: 1,
+        borderColor: t.border2,
+        backgroundColor: t.surface,
+      }}>
+      {opts.map((o) => {
+        const on = o.id === value;
+        return (
+          <Pressable
+            key={o.id}
+            onPress={() => onChange(o.id)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            style={({ pressed }) => ({
+              paddingHorizontal: SP.md,
+              paddingVertical: 5,
+              borderRadius: RADIUS.pill,
+              backgroundColor: on ? t.accent : 'transparent',
+              opacity: pressed ? 0.6 : 1,
+            })}>
+            <Txt style={{ fontSize: 13, fontWeight: '600', color: on ? t.bg : t.text2 }}>{o.label}</Txt>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 }
 
 function TrailTab({

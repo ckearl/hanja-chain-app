@@ -134,9 +134,6 @@ function compoundRowsForChar(hanja: string, limit = -1) {
   );
 }
 
-// Placeholder until user state (history, SRS) lands in its own writable DB.
-const RECENT_HANJA = ['學', '江', '心', '愛'];
-
 export const sqliteSource: DataSource = {
   async getCharacter(hanja) {
     return (await loadChars([hanja]))[0];
@@ -229,9 +226,5 @@ export const sqliteSource: DataSource = {
       [wordKo],
     );
     return rows[0] && toChainWord(rows[0].word_ko, rows[0].hanja_form);
-  },
-
-  async recent() {
-    return loadChars(RECENT_HANJA);
   },
 };

@@ -3,7 +3,7 @@ import { SQLiteProvider } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { attachDatabase, DB_NAME } from '@/data';
+import { DB_NAME, initDatabases } from '@/data';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 // Copied from the bundle into the app's documents dir on first launch. DB_NAME
@@ -32,7 +32,7 @@ function RootStack() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SQLiteProvider databaseName={DB_NAME} assetSource={DB_ASSET} onInit={attachDatabase}>
+      <SQLiteProvider databaseName={DB_NAME} assetSource={DB_ASSET} onInit={initDatabases}>
         <ThemeProvider>
           <RootStack />
         </ThemeProvider>

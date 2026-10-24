@@ -170,8 +170,6 @@ const rank = (a: Compound, b: Compound) =>
 
 const toChain = (c: Compound) => toChainWord(c.wordKo, c.hanjaForm);
 
-const RECENT_HANJA = ['學', '江', '心', '愛'];
-
 export const mockSource: DataSource = {
   async getCharacter(hanja) {
     return CHARS.get(hanja);
@@ -242,9 +240,5 @@ export const mockSource: DataSource = {
   async toChainWord(wordKo) {
     const c = COMPOUNDS.find((x) => x.wordKo === wordKo);
     return c ? toChain(c) : undefined;
-  },
-
-  async recent() {
-    return RECENT_HANJA.map((h) => CHARS.get(h)).filter(Boolean) as HanjaChar[];
   },
 };

@@ -6,8 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CharacterCard } from '@/components/CharacterCard';
 import { Hanja, Txt } from '@/components/ui';
-import { data, type HanjaChar, type SearchMode } from '@/data';
+import { data, type HanjaChar, type SearchMode, user } from '@/data';
 import { useQuery } from '@/hooks/useQuery';
+import { useUserQuery } from '@/hooks/useUserQuery';
 import { RADIUS, SP } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -25,7 +26,7 @@ export default function SearchScreen() {
   const [mode, setMode] = useState<SearchMode>('auto');
 
   const { data: results } = useQuery<HanjaChar[]>(() => data.search(query, mode), [query, mode]);
-  const { data: recent } = useQuery<HanjaChar[]>(() => data.recent(), []);
+  const { data: recent } = useUserQuery(() => user.recentHanja(12), []);
 
   const trimmed = query.trim();
   const showResults = trimmed.length > 0;
@@ -128,16 +129,20 @@ function ResultCardWithExamples({ char, onOpen }: { char: HanjaChar; onOpen: (h:
   );
 }
 
-function RecentRow({ recent, onPick }: { recent: HanjaChar[]; onPick: (h: string) => void }) {
+function RecentRow({ recent, onPick }: { recent: string[]; onPick: (h: string) => void }) {
   const { t } = useTheme();
   return (
     <View style={{ padding: SP.lg, gap: SP.md }}>
       <Txt kind="label">Recently viewed</Txt>
+      {recent.length === 0 ? (
+        <Txt kind="secondary">Characters you open will show up here.</Txt>
+      ) : null}
       <View style={{ flexDirection: 'row', gap: SP.md, flexWrap: 'wrap' }}>
-        {recent.map((c) => (
+        {recent.map((h) => (
           <Pressable
-            key={c.hanja}
-            onPress={() => onPick(c.hanja)}
+            key={h}
+            onPress={() => onPick(h)}
+            accessibilityLabel={h}
             style={{
               width: 64,
               height: 64,
@@ -148,7 +153,7 @@ function RecentRow({ recent, onPick }: { recent: HanjaChar[]; onPick: (h: string
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-            <Hanja char={c.hanja} size={30} />
+            <Hanja char={h} size={30} />
           </Pressable>
         ))}
       </View>

@@ -75,5 +75,4 @@ export interface DataSource {
   // Words that share the given Hanja (excluding `excludeWord`) — Chains edges.
   chainNeighbors(hanja: string, excludeWord?: string): Promise<ChainWord[]>;
   toChainWord(wordKo: string): Promise<ChainWord | undefined>;
-  recent(): Promise<HanjaChar[]>;
 }
