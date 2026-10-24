@@ -6,7 +6,7 @@ Two projects, one product:
 
 | Project | Path | Role |
 |---|---|---|
-| **Pipeline** (ETL) | `/Users/toph/projects/hanja-app` | Scrapes/builds `hanja.sqlite` — the content database |
+| **Pipeline** (ETL) | `/Users/toph/projects/hanja-chain-data` | Scrapes/builds `hanja.sqlite` — the content database |
 | **App** (this repo) | `/Users/toph/projects/hanja-chain-app` | Expo / React Native learner app |
 
 ---
@@ -16,14 +16,14 @@ Two projects, one product:
 - The **stdict scrape was ~49% done** (203 / 415 syllables) and **still running** in a
   terminal/tmux as of this snapshot. It's resume-safe — if it stopped, just rerun:
   ```bash
-  cd /Users/toph/projects/hanja-app
+  cd /Users/toph/projects/hanja-chain-data
   caffeinate -is python -m pipeline.scrape_stdict --scope core 2>&1 | tee -a scrape.log
   ```
   Done syllables are skipped; cached pages are reused.
 - **krdict is fully done** (every syllable, capped at 100 results each — accepted limit).
 - **When the scrape finishes**, build the real DB:
   ```bash
-  cd /Users/toph/projects/hanja-app
+  cd /Users/toph/projects/hanja-chain-data
   python -m pipeline.bucket_and_merge --scope core
   python -m pipeline.build_sqlite     --scope core    # -> hanja.sqlite
   python -m pipeline.validate         --scope core
@@ -40,9 +40,9 @@ Two projects, one product:
   cd /Users/toph/projects/hanja-chain-app
   npx expo start --clear     # then scan QR in Expo Go, or press w (web)
   ```
-- **Expo SDK is pinned to 54** on purpose — the App Store Expo Go was lagging behind the
-  just-released SDK 55/56 and rejected them. Don't bump the SDK unless you've confirmed
-  Expo Go supports it (or you switch to a dev build, which has no such limit).
+- **Expo SDK 58** (RN 0.88, React 19.3) as of 2026-10-23. The store Expo Go build for
+  SDK 58 was announced as "within a few weeks" of the 2026-10-21 release — if your
+  installed Expo Go rejects the project, update Expo Go or use a dev build.
 - Confirmed working on **web** and **Expo Go**. iOS Simulator untested (no simulator
   runtime installed here — install one via Xcode to use `press i`).
 
@@ -91,7 +91,9 @@ src/
 
 ## 4. Gotchas to remember
 
-- **Don't bump Expo SDK** past what Expo Go supports (see §2). SDK 54 is the safe floor.
+- **Expo Go only supports one SDK at a time** (see §2). Check it before bumping the SDK.
+- RN 0.88 widened `ColorValue` (adds `null`/`number`); `@expo/vector-icons` still types
+  `color` narrowly — see the cast in `src/app/(tabs)/_layout.tsx`.
 - **Xcode license** must stay accepted or `git`/`xcrun`/`simctl` fail with exit 69
   (`sudo xcodebuild -license accept`). Already accepted.
 - Only ~50% of compounds will have English (krdict's cap) — UI must treat English as

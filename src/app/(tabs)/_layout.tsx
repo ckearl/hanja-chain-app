@@ -7,8 +7,10 @@ import { useTheme } from '@/theme/ThemeProvider';
 type IconName = keyof typeof Ionicons.glyphMap;
 
 function icon(name: IconName) {
+  // RN 0.88 widened ColorValue (null | number); @expo/vector-icons still types color as
+  // string | OpaqueColorValue. Our tint colors are always hex strings.
   return ({ color, size }: { color: ColorValue; size: number }) => (
-    <Ionicons name={name} color={color} size={size} />
+    <Ionicons name={name} color={color as string} size={size} />
   );
 }
 
