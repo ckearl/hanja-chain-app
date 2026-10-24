@@ -1,10 +1,10 @@
 // ── Mock DataSource ─────────────────────────────────────────────────────
 // Real Korean/Hanja data from the design mock, wired through the async
-// DataSource interface. Replaced by a SQLite-backed source once the pipeline
-// finishes — screens import the interface, never this file directly.
+// DataSource interface. Superseded by the SQLite source (sqlite.ts); kept as a
+// fixture — screens import the interface, never this file directly.
 
+import { decompose, hasLatin, isHanja, toChainWord } from './hangul';
 import {
-  type ChainWord,
   type Compound,
   type DataSource,
   type GalleryFilter,
@@ -12,24 +12,6 @@ import {
   type Reading,
   type SearchMode,
 } from './types';
-
-// ── Hangul jamo decomposition (folds tense/compound jamo to a base) ──────
-const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-const JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
-const CHO_BASE: Record<string, string> = { 'ㄲ':'ㄱ','ㄸ':'ㄷ','ㅃ':'ㅂ','ㅆ':'ㅅ','ㅉ':'ㅈ' };
-const JUNG_BASE: Record<string, string> = { 'ㅐ':'ㅐ','ㅒ':'ㅑ','ㅔ':'ㅔ','ㅖ':'ㅕ','ㅘ':'ㅗ','ㅙ':'ㅗ','ㅚ':'ㅗ','ㅝ':'ㅜ','ㅞ':'ㅜ','ㅟ':'ㅜ','ㅢ':'ㅡ' };
-
-export function decompose(syllable: string): { cho: string | null; jung: string | null } {
-  const code = (syllable || '').charCodeAt(0) - 0xac00;
-  if (code < 0 || code > 11171) return { cho: null, jung: null };
-  const cho = CHO[Math.floor(code / 588)];
-  const jung = JUNG[Math.floor((code % 588) / 28)];
-  return { cho: CHO_BASE[cho] ?? cho, jung: JUNG_BASE[jung] ?? jung };
-}
-
-const HANJA_RE = /[㐀-鿿豈-﫿]/;
-export const isHanja = (c: string) => HANJA_RE.test(c);
-const hasLatin = (s: string) => /[a-zA-Z]/.test(s);
 
 // ── Seed: [hanja, primarySound, meaningKo, meaningEn, level, extraReadings] ─
 type Seed = [string, string, string, string, string, string[]?];
@@ -186,20 +168,7 @@ for (const c of COMPOUNDS) {
 const rank = (a: Compound, b: Compound) =>
   Number(b.hasEnglish) - Number(a.hasEnglish) || a.hanjaForm.length - b.hanjaForm.length;
 
-function toChain(c: Compound): ChainWord {
-  // Zip the word's syllables with its Hanja chain (equal length for pure
-  // Sino-Korean words). The syllable comes from the WORD (so 樂 reads 낙 in
-  // 낙관적 even though its primary sound is 락).
-  const wordSyllables = [...c.wordKo];
-  return {
-    wordKo: c.wordKo,
-    hanjaForm: c.hanjaForm,
-    syllables: c.chars.map((ch) => ({
-      syllable: wordSyllables[ch.position] ?? '',
-      hanja: ch.hanja,
-    })),
-  };
-}
+const toChain = (c: Compound) => toChainWord(c.wordKo, c.hanjaForm);
 
 const RECENT_HANJA = ['學', '江', '心', '愛'];
 

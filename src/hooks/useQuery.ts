@@ -11,12 +11,17 @@ export function useQuery<T>(fn: () => Promise<T>, deps: unknown[]): {
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    fn().then((res) => {
-      if (alive) {
-        setData(res);
-        setLoading(false);
-      }
-    });
+    fn()
+      .then((res) => {
+        if (alive) {
+          setData(res);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('[useQuery]', err);
+        if (alive) setLoading(false);
+      });
     return () => {
       alive = false;
     };

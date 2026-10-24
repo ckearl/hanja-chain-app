@@ -1,8 +1,10 @@
-// The single data entry point screens import. Today it's the mock; when the
-// pipeline finishes we swap this binding to the SQLite source — no screen edits.
-import { mockSource } from './mock';
+// The single data entry point screens import. Bound to the on-device SQLite
+// source; mock.ts stays as a fixture. An API-backed source for the long tail
+// can slot in behind the same interface — no screen edits.
+import { sqliteSource } from './sqlite';
 import { type DataSource } from './types';
 
-export const data: DataSource = mockSource;
-export { decompose } from './mock';
+export const data: DataSource = sqliteSource;
+export { attachDatabase, DB_NAME } from './sqlite';
+export { decompose } from './hangul';
 export * from './types';
