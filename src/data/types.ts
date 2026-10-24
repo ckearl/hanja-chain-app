@@ -61,6 +61,7 @@ export type GalleryEntry = {
   hanja: string;
   primarySound: string;
   meaningKo: string | null;
+  level: string | null; // 한국어문회 grade, e.g. '8급' (Daily picks from the easy grades)
 };
 
 // The interface every screen depends on. Async so the SQLite implementation

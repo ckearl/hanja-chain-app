@@ -25,6 +25,9 @@ export type UserStats = {
   reviewsToday: number;
 };
 
+// One active local day (only days with activity are stored).
+export type ActivityDay = { day: string; views: number; reviews: number };
+
 export interface UserStore {
   isSaved(hanja: string): Promise<boolean>;
   // Returns the new saved state. Saving creates the SRS card (a previously
@@ -36,6 +39,7 @@ export interface UserStore {
   recentHanja(limit?: number): Promise<string[]>; // most recent first, deduped
 
   streak(): Promise<number>; // consecutive active days ending today or yesterday
+  activity(days: number): Promise<ActivityDay[]>; // active days within the last `days` (incl. today), oldest first
   stats(): Promise<UserStats>;
 
   dueCount(): Promise<number>;

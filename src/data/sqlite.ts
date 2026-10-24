@@ -206,11 +206,11 @@ export const sqliteSource: DataSource = {
 
   async galleryIndex() {
     // Binary order on Hangul syllables is 가나다 order.
-    const rows = await all<{ hanja: string; primary_sound: string; meaning_ko: string | null }>(
-      'SELECT hanja, primary_sound, meaning_ko FROM characters ORDER BY primary_sound, hanja',
+    const rows = await all<{ hanja: string; primary_sound: string; meaning_ko: string | null; level: string | null }>(
+      'SELECT hanja, primary_sound, meaning_ko, level FROM characters ORDER BY primary_sound, hanja',
     );
     return rows.map(
-      (r): GalleryEntry => ({ hanja: r.hanja, primarySound: r.primary_sound, meaningKo: r.meaning_ko }),
+      (r): GalleryEntry => ({ hanja: r.hanja, primarySound: r.primary_sound, meaningKo: r.meaning_ko, level: r.level }),
     );
   },
 

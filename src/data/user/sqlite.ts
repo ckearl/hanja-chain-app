@@ -7,8 +7,8 @@
 import { openDatabaseAsync, type SQLiteBindValue, type SQLiteDatabase } from 'expo-sqlite';
 import { Platform } from 'react-native';
 
-import { computeStreak, localDay, newCard, schedule } from './srs';
-import { type Grade, type SrsCard, type UserStore } from './types';
+import { addDays, computeStreak, localDay, newCard, schedule } from './srs';
+import { type ActivityDay, type Grade, type SrsCard, type UserStore } from './types';
 
 export const USER_DB_NAME = 'user.db';
 
@@ -208,6 +208,12 @@ export const sqliteUserStore: UserStore = {
   },
 
   streak,
+
+  activity(days) {
+    return all<ActivityDay>('SELECT day, views, reviews FROM activity_days WHERE day > ? ORDER BY day', [
+      addDays(localDay(), -days),
+    ]);
+  },
 
   async stats() {
     const today = localDay();

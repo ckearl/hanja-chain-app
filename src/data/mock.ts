@@ -226,7 +226,7 @@ export const mockSource: DataSource = {
 
   async galleryIndex() {
     return [...CHARS.values()]
-      .map((ch) => ({ hanja: ch.hanja, primarySound: ch.primarySound, meaningKo: ch.meaningKo }))
+      .map((ch) => ({ hanja: ch.hanja, primarySound: ch.primarySound, meaningKo: ch.meaningKo, level: ch.level }))
       .sort((a, b) => a.primarySound.localeCompare(b.primarySound, 'ko') || a.hanja.localeCompare(b.hanja));
   },
 
