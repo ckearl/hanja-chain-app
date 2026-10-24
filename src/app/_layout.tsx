@@ -24,6 +24,7 @@ function RootStack() {
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="character/[hanja]" options={{ title: '', headerBackTitle: 'Back' }} />
+        <Stack.Screen name="review" options={{ title: '복습', headerBackTitle: 'Back' }} />
       </Stack>
     </>
   );

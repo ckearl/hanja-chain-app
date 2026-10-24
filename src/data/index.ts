@@ -19,5 +19,7 @@ export async function initDatabases(db: SQLiteDatabase) {
 
 export { DB_NAME } from './sqlite';
 export { decompose, isHanja } from './hangul';
+// Pure SM-2 scheduler, for previewing a grade's next interval without writing.
+export { schedule as previewSchedule } from './user/srs';
 export * from './types';
 export * from './user/types';

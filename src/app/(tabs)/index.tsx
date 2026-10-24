@@ -240,14 +240,18 @@ export default function DailyScreen() {
 
           {/* Flashcards + search */}
           <View style={{ flexDirection: 'row', gap: SP.md }}>
-            {/* TODO(review): navigate to the flashcard review screen once it
-                exists (next task). Until then the pane is display-only. */}
-            <Pane half label={`Flashcards: ${due} due today`}>
+            <Pane half onPress={() => router.push('/review')} label={`Flashcards: ${due} due today`}>
               <PaneHead icon="albums-outline" title="Flashcards" badge={due > 0 ? due : undefined} />
               {due > 0 ? (
-                <Txt style={{ fontSize: 16, lineHeight: 23, marginTop: SP.xs }}>
-                  오늘 복습할{'\n'}카드 <Txt style={{ fontWeight: '700', fontSize: 16 }}>{due}</Txt>장
-                </Txt>
+                <>
+                  <Txt style={{ fontSize: 16, lineHeight: 23, marginTop: SP.xs }}>
+                    오늘 복습할{'\n'}카드 <Txt style={{ fontWeight: '700', fontSize: 16 }}>{due}</Txt>장
+                  </Txt>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SP.xs }}>
+                    <Txt style={{ color: t.accent, fontSize: 14, fontWeight: '600' }}>복습 시작</Txt>
+                    <Ionicons name="arrow-forward" size={15} color={t.accent} />
+                  </View>
+                </>
               ) : savedCount > 0 ? (
                 <Txt style={{ fontSize: 16, lineHeight: 23, marginTop: SP.xs }}>
                   오늘 복습 완료{'\n'}
