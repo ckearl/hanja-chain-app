@@ -55,6 +55,22 @@ export type GalleryFilter = {
   syllable?: string | null; // full syllable
 };
 
+// Lightweight row for browsing every character at once (Gallery grid + its
+// filter chips) — no readings join, so all ~1,800 load in one cheap query.
+export type GalleryEntry = {
+  hanja: string;
+  primarySound: string;
+  meaningKo: string | null;
+  level: string | null; // 한국어문회 grade, e.g. '8급' (Daily picks from the easy grades)
+};
+
+// Stroke-order graphics in a 1024-unit box with y pointing up (baseline at
+// y=900 from the top): draw inside <G transform="scale(1,-1) translate(0,-900)">.
+export type StrokeOrder = {
+  strokes: string[]; // SVG outline path per stroke, in writing order
+  medians: [number, number][][]; // centerline polyline per stroke, start → end
+};
+
 // The interface every screen depends on. Async so the SQLite implementation
 // (queries) is a drop-in replacement for the mock.
 export interface DataSource {
@@ -62,8 +78,11 @@ export interface DataSource {
   compoundsForChar(hanja: string, limit?: number): Promise<Compound[]>;
   search(query: string, mode?: SearchMode): Promise<HanjaChar[]>;
   charactersByReading(filter: GalleryFilter): Promise<HanjaChar[]>;
+  // Every character as a GalleryEntry, ordered by primary sound (가나다) then hanja.
+  galleryIndex(): Promise<GalleryEntry[]>;
   // Words that share the given Hanja (excluding `excludeWord`) — Chains edges.
   chainNeighbors(hanja: string, excludeWord?: string): Promise<ChainWord[]>;
   toChainWord(wordKo: string): Promise<ChainWord | undefined>;
-  recent(): Promise<HanjaChar[]>;
+  // undefined when there's no stroke data for the character (4 of 1,799).
+  strokeOrder(hanja: string): Promise<StrokeOrder | undefined>;
 }

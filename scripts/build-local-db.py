@@ -7,13 +7,20 @@ Keeps every character + reading, every krdict compound (the learner's
 dictionary = common words), and tops each character up to TARGET_PER_CHAR
 compounds with clean stdict-only words (pure Hanja, 2-4 chars, no 『domain』 tag).
 
+Also adds stroke-order data (SVG outline + median per stroke, 1024-unit box) from
+animCJK (Korean set first, then Traditional Chinese, Japanese) and Make Me a Hanzi,
+downloaded at pinned commits into scripts/.cache/. Both are Arphic Public License;
+see assets/db/STROKES-LICENSE.txt.
+
 Usage: python3 scripts/build-local-db.py [path/to/hanja.sqlite]
 """
 
 import hashlib
+import json
 import os
 import sqlite3
 import sys
+import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/projects/hanja-chain-data/hanja.sqlite')
@@ -21,6 +28,18 @@ OUT = os.path.join(ROOT, 'assets', 'db', 'hanja.db')
 VERSION_TS = os.path.join(ROOT, 'src', 'data', 'dbVersion.ts')
 
 TARGET_PER_CHAR = 12
+
+CACHE = os.path.join(ROOT, 'scripts', '.cache')
+ANIMCJK = 'https://raw.githubusercontent.com/parsimonhi/animCJK/3e1253b341cc7be14c3540bb3c045e6163557777'
+MMAH = 'https://raw.githubusercontent.com/skishore/makemeahanzi/bddc96d41bef78427ed0e034e9f7e31d71fd1b92'
+# First source with a character wins. Korean stroke order where animCJK has it;
+# Traditional Chinese and Japanese orders agree with it for nearly all Hanja.
+STROKE_SOURCES = [
+    ('animcjk-ko', f'{ANIMCJK}/graphicsKo.txt'),
+    ('animcjk-zh-hant', f'{ANIMCJK}/graphicsZhHant.txt'),
+    ('animcjk-ja', f'{ANIMCJK}/graphicsJa.txt'),
+    ('makemeahanzi', f'{MMAH}/graphics.txt'),
+]
 
 SCHEMA = """
 CREATE TABLE characters (
@@ -60,6 +79,12 @@ CREATE TABLE character_compounds (
   position    INTEGER NOT NULL,  -- ordinal among the compound's Hanja, not a string index
   PRIMARY KEY (hanja, compound_id, position)
 );
+CREATE TABLE stroke_orders (
+  hanja   TEXT PRIMARY KEY REFERENCES characters(hanja),
+  source  TEXT NOT NULL,
+  strokes TEXT NOT NULL,  -- JSON array of SVG outline paths, in stroke order
+  medians TEXT NOT NULL   -- JSON array of [x, y] polylines, one per stroke
+);
 """
 
 INDEXES = """
@@ -95,6 +120,40 @@ WHERE cand.rn <= ? - coalesce(k.n, 0)
 """
 
 
+def load_stroke_sources() -> list[tuple[str, dict]]:
+    """Each source as (name, {char: graphics record}), downloading once into CACHE."""
+    os.makedirs(CACHE, exist_ok=True)
+    out = []
+    for name, url in STROKE_SOURCES:
+        path = os.path.join(CACHE, f'{name}.txt')
+        if not os.path.exists(path):
+            print(f'downloading {url}')
+            urllib.request.urlretrieve(url, path)
+        with open(path, encoding='utf-8') as f:
+            records = (json.loads(line) for line in f if line.strip())
+            out.append((name, {r['character']: r for r in records}))
+    return out
+
+
+def insert_stroke_orders(db: sqlite3.Connection) -> None:
+    sources = load_stroke_sources()
+    rows, mismatched = [], []
+    for hanja, total in db.execute('SELECT hanja, total_strokes FROM characters'):
+        found = [(name, records[hanja]) for name, records in sources if hanja in records]
+        if not found:
+            continue
+        # Glyph conventions differ (Japanese 侮 has 8 strokes, Korean 9), so prefer
+        # the first source that agrees with the dictionary's stroke count.
+        name, r = next(((n, r) for n, r in found if len(r['strokes']) == total), found[0])
+        rows.append((hanja, name, json.dumps(r['strokes'], separators=(',', ':')),
+                     json.dumps(r['medians'], separators=(',', ':'))))
+        if total is not None and total != len(r['strokes']):
+            mismatched.append(f'{hanja}({name}:{len(r["strokes"])}≠{total})')
+    db.executemany('INSERT INTO stroke_orders VALUES (?, ?, ?, ?)', rows)
+    if mismatched:
+        print(f'  stroke count differs from total_strokes for {len(mismatched)}: {" ".join(mismatched[:20])}')
+
+
 def main() -> None:
     if not os.path.exists(SRC):
         sys.exit(f'source DB not found: {SRC}')
@@ -127,13 +186,16 @@ def main() -> None:
       INSERT INTO character_compounds
       SELECT cc.* FROM src.character_compounds cc JOIN keep k ON k.id = cc.compound_id""")
 
+    insert_stroke_orders(db)
+
     db.executescript(INDEXES)
     db.commit()
     db.execute('DETACH DATABASE src')
     db.execute('VACUUM')
 
     counts = {t: db.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0]
-              for t in ('characters', 'character_readings', 'compounds', 'character_compounds')}
+              for t in ('characters', 'character_readings', 'compounds', 'character_compounds',
+                        'stroke_orders')}
     db.close()
 
     # The app copies the asset into its documents dir once per DB name, so a

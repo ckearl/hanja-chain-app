@@ -19,9 +19,8 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: t.bg },
-        headerTitleStyle: { color: t.text },
-        headerShadowVisible: false,
+        // Each tab draws its own title under a top safe-area inset.
+        headerShown: false,
         tabBarStyle: { backgroundColor: t.surface, borderTopColor: t.border },
         tabBarActiveTintColor: t.accent,
         tabBarInactiveTintColor: t.text3,

@@ -1,6 +1,6 @@
 # Handoff — 한자 체인 (Hanja Chain)
 
-_Snapshot: 2026-06-02 evening. Pick up here._
+_Snapshot: 2026-10-24 (after the overnight feature run on `overnight/features`). Pick up here._
 
 Two projects, one product:
 
@@ -26,7 +26,8 @@ Two projects, one product:
 
 ## 2. Where the app stands
 
-**Built: the Search → Character Detail vertical slice, on real data (on-device SQLite).**
+**Built: all four tabs + Detail + flashcard review, on real data (on-device SQLite).**
+Work is on branch `overnight/features` (not merged to `main`, not pushed).
 
 - Run it:
   ```bash
@@ -49,50 +50,72 @@ Two projects, one product:
   another `DataSource` behind the same interface.
 - **Trimmed DB:** `python3 scripts/build-local-db.py` reads the pipeline's `hanja.sqlite`
   **read-only** and writes `assets/db/hanja.db` (~9 MB): all chars + readings, every
-  krdict compound (`is_common`), topped up to 12 compounds/char with clean stdict words.
+  krdict compound (`is_common`), topped up to 12 compounds/char with clean stdict words,
+  plus `stroke_orders` (1,795 chars; animCJK Korean → Trad. Chinese → Japanese → Make Me
+  a Hanzi, preferring a source whose stroke count matches `total_strokes`; Arphic PL,
+  see `assets/db/STROKES-LICENSE.txt`). Sources download once into `scripts/.cache/`.
   It also regenerates `src/data/dbVersion.ts` (content hash) — the on-device copy is
   keyed by it, so a rebuilt asset replaces the stale copy. Rerun after any pipeline rebuild.
 - `<SQLiteProvider>` in `src/app/_layout.tsx` copies the asset on first launch and hands
   the handle to `sqlite.ts`. Web works too (`metro.config.js` adds `.wasm` + COOP/COEP
   headers; `app.json` sets the same headers for hosting).
-- User state (saved chars, SRS, streak) will live in a **separate writable DB**, not in
-  the read-only `hanja.sqlite`. (Deferred task.)
+- **User state** lives in a separate writable `user.db` behind the `UserStore` interface
+  (`src/data/user/`): saved chars, view history, activity days → streak, classic SM-2
+  cards (grades 0–5, `srs.ts`). Migrations on `PRAGMA user_version`; writes go through a
+  serial queue (no exclusive transactions on web). `useUserQuery` re-runs on store
+  changes so saves update every screen live. Opened by `initDatabases` (the provider's
+  `onInit`); a user.db failure only breaks user-state calls.
+- **Font:** subset Noto Serif CJK KR in `assets/fonts/` (Regular 3 MB for `<Hanja>`,
+  Bold 0.75 MB for titles, no Hanja in Bold), loaded with `useFonts`. Rebuild with
+  `scripts/build-font-subset.py` (see its docstring) whenever the DB gains new characters.
 
 ### File map
 
 ```
 src/
   theme/        colors.ts (tokens+accents, dark/ink default)   ThemeProvider.tsx
+  theme/        fonts.ts (subset serif + fallbacks)
   data/         types.ts (mirrors schema)  sqlite.ts  hangul.ts  mock.ts  index.ts
-  hooks/        useQuery.ts (async)
+  data/user/    types.ts  sqlite.ts (user.db)  srs.ts (SM-2 + date math)
+  hooks/        useQuery.ts (async)  useUserQuery.ts (re-runs on user-state changes)
   components/   ui.tsx  CharacterCard.tsx  Placeholder.tsx
+  components/strokes/  StrokePractice.tsx (spin-in card, demo, tracing)
+                       StrokeCanvas.tsx (svg)  geometry.ts (stroke matching)
   app/
-    _layout.tsx              root Stack + ThemeProvider
-    (tabs)/_layout.tsx       Daily · Gallery · Search · Chains
-    (tabs)/search.tsx        ✅ built
-    (tabs)/{index,gallery,chains}.tsx   placeholders
-    character/[hanja].tsx    ✅ built
+    _layout.tsx              root Stack, fonts, SQLiteProvider, ThemeProvider
+    (tabs)/_layout.tsx       Daily · Gallery · Search · Chains (headerShown: false)
+    (tabs)/index.tsx         Daily bento (today's char, gallery, streak, flashcards…)
+    (tabs)/gallery.tsx       초성 → 중성 → syllable browser, 전체/저장 toggle
+    (tabs)/search.tsx        search + recently viewed (from history)
+    (tabs)/chains.tsx        word → Hanja → word tree (?word= / ?hanja= params)
+    character/[hanja].tsx    detail + save toggle; tap the hero glyph → stroke practice
+    review.tsx               SM-2 flashcard session
 ```
 
 ---
 
 ## 3. Next steps (suggested order)
 
-1. **Run it and give design feedback** — you said you're not 100% sold on the mock UI.
-   React to the real Search/Detail slice; redirect the look before more is built.
-2. **Build the remaining tabs** (real data is live):
-   - **Daily** — bento home (today's char, streak, flashcards-due, gallery count).
-   - **Gallery** — the nested 초성 → 중성 → syllable cumulative filter (jamo logic already
-     in `src/data/hangul.ts` via `decompose`).
-   - **Chains** — the traversal graph (the novel screen; `data.chainNeighbors()` is ready).
-3. **Polish**: bundle a Hanja serif font (Noto Serif KR) instead of the system serif;
-   tune spacing to the mock.
-4. **Ranking**: compounds tie-break by id after common/English/length (no frequency
-   data), so e.g. 휴학 can outrank 학생. krdict's vocab grade (초급/중급/고급) would fix it
+1. **Run it and give design feedback** on the whole app (`npx expo start`, press `w`).
+   Then merge `overnight/features` into `main` when happy.
+2. **Test on a device/simulator.** Everything was verified on web only; Expo Go for
+   SDK 58 may not be in the stores yet (see above).
+3. **Ranking**: compounds tie-break by id after common/English/length (no frequency
+   data), so e.g. 學's top words are 휴학/광학 rather than 학교/학생 — visible on Daily,
+   Detail, Chains and flashcard backs. krdict's vocab grade (초급/중급/고급) would fix it
    if the pipeline captured it.
-5. **User-state DB** (saved chars, SRS, streak, real "recent") — separate writable DB.
-6. Old `hanja-<hash>.db` copies aren't deleted when the asset changes (~9 MB each);
+4. **Open TODOs in code:** `TODO(etymology)` (Daily's 글자 풀이 pane uses radical/strokes
+   since the DB has no etymology); Chains `?word=學校` (multi-Hanja) opens only 學.
+5. Old `hanja-<hash>.db` copies aren't deleted when the asset changes (~9 MB each);
    add cleanup before shipping data updates.
+6. Smaller polish: Chains tree scrolls sideways past ~7 hops; Gallery labels truncate
+   long meanings at 4 columns; new SRS cards show "내일" on every grade button (correct
+   SM-2 for a first review, but looks redundant); full 11,172-syllable Hangul font
+   coverage is one flag away (`--all-hangul`, +2 MB/weight).
+
+7. Stroke order: no data for 屛 戱 玆 畓 (button hidden). 81 chars' stroke data
+   disagrees with the dictionary's `total_strokes` (glyph conventions, e.g. 成 6 vs 7);
+   practice uses the data's own count. Practice results aren't saved yet (could feed SRS).
 
 ## 4. Gotchas to remember
 

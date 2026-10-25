@@ -12,6 +12,7 @@ import {
   type CoreLevel,
   type Compound,
   type DataSource,
+  type GalleryEntry,
   type GalleryFilter,
   type HanjaChar,
   type SearchMode,
@@ -133,9 +134,6 @@ function compoundRowsForChar(hanja: string, limit = -1) {
   );
 }
 
-// Placeholder until user state (history, SRS) lands in its own writable DB.
-const RECENT_HANJA = ['學', '江', '心', '愛'];
-
 export const sqliteSource: DataSource = {
   async getCharacter(hanja) {
     return (await loadChars([hanja]))[0];
@@ -206,6 +204,16 @@ export const sqliteSource: DataSource = {
     return loadChars(rows.map((r) => r.hanja));
   },
 
+  async galleryIndex() {
+    // Binary order on Hangul syllables is 가나다 order.
+    const rows = await all<{ hanja: string; primary_sound: string; meaning_ko: string | null; level: string | null }>(
+      'SELECT hanja, primary_sound, meaning_ko, level FROM characters ORDER BY primary_sound, hanja',
+    );
+    return rows.map(
+      (r): GalleryEntry => ({ hanja: r.hanja, primarySound: r.primary_sound, meaningKo: r.meaning_ko, level: r.level }),
+    );
+  },
+
   async chainNeighbors(hanja, excludeWord) {
     return (await compoundRowsForChar(hanja))
       .filter((c) => c.word_ko !== excludeWord)
@@ -220,7 +228,11 @@ export const sqliteSource: DataSource = {
     return rows[0] && toChainWord(rows[0].word_ko, rows[0].hanja_form);
   },
 
-  async recent() {
-    return loadChars(RECENT_HANJA);
+  async strokeOrder(hanja) {
+    const rows = await all<{ strokes: string; medians: string }>(
+      'SELECT strokes, medians FROM stroke_orders WHERE hanja = ?',
+      [hanja],
+    );
+    return rows[0] && { strokes: JSON.parse(rows[0].strokes), medians: JSON.parse(rows[0].medians) };
   },
 };

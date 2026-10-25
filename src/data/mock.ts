@@ -170,8 +170,6 @@ const rank = (a: Compound, b: Compound) =>
 
 const toChain = (c: Compound) => toChainWord(c.wordKo, c.hanjaForm);
 
-const RECENT_HANJA = ['學', '江', '心', '愛'];
-
 export const mockSource: DataSource = {
   async getCharacter(hanja) {
     return CHARS.get(hanja);
@@ -226,6 +224,12 @@ export const mockSource: DataSource = {
       .sort((a, b) => a.primarySound.localeCompare(b.primarySound, 'ko'));
   },
 
+  async galleryIndex() {
+    return [...CHARS.values()]
+      .map((ch) => ({ hanja: ch.hanja, primarySound: ch.primarySound, meaningKo: ch.meaningKo, level: ch.level }))
+      .sort((a, b) => a.primarySound.localeCompare(b.primarySound, 'ko') || a.hanja.localeCompare(b.hanja));
+  },
+
   async chainNeighbors(hanja, excludeWord) {
     return (BY_HANJA.get(hanja) ?? [])
       .filter((c) => c.wordKo !== excludeWord)
@@ -238,7 +242,7 @@ export const mockSource: DataSource = {
     return c ? toChain(c) : undefined;
   },
 
-  async recent() {
-    return RECENT_HANJA.map((h) => CHARS.get(h)).filter(Boolean) as HanjaChar[];
+  async strokeOrder() {
+    return undefined; // no stroke fixtures
   },
 };
