@@ -50,7 +50,10 @@ Work is on branch `overnight/features` (not merged to `main`, not pushed).
   another `DataSource` behind the same interface.
 - **Trimmed DB:** `python3 scripts/build-local-db.py` reads the pipeline's `hanja.sqlite`
   **read-only** and writes `assets/db/hanja.db` (~9 MB): all chars + readings, every
-  krdict compound (`is_common`), topped up to 12 compounds/char with clean stdict words.
+  krdict compound (`is_common`), topped up to 12 compounds/char with clean stdict words,
+  plus `stroke_orders` (1,795 chars; animCJK Korean → Trad. Chinese → Japanese → Make Me
+  a Hanzi, preferring a source whose stroke count matches `total_strokes`; Arphic PL,
+  see `assets/db/STROKES-LICENSE.txt`). Sources download once into `scripts/.cache/`.
   It also regenerates `src/data/dbVersion.ts` (content hash) — the on-device copy is
   keyed by it, so a rebuilt asset replaces the stale copy. Rerun after any pipeline rebuild.
 - `<SQLiteProvider>` in `src/app/_layout.tsx` copies the asset on first launch and hands
@@ -76,6 +79,8 @@ src/
   data/user/    types.ts  sqlite.ts (user.db)  srs.ts (SM-2 + date math)
   hooks/        useQuery.ts (async)  useUserQuery.ts (re-runs on user-state changes)
   components/   ui.tsx  CharacterCard.tsx  Placeholder.tsx
+  components/strokes/  StrokePractice.tsx (spin-in card, demo, tracing)
+                       StrokeCanvas.tsx (svg)  geometry.ts (stroke matching)
   app/
     _layout.tsx              root Stack, fonts, SQLiteProvider, ThemeProvider
     (tabs)/_layout.tsx       Daily · Gallery · Search · Chains (headerShown: false)
@@ -83,7 +88,7 @@ src/
     (tabs)/gallery.tsx       초성 → 중성 → syllable browser, 전체/저장 toggle
     (tabs)/search.tsx        search + recently viewed (from history)
     (tabs)/chains.tsx        word → Hanja → word tree (?word= / ?hanja= params)
-    character/[hanja].tsx    detail + save toggle
+    character/[hanja].tsx    detail + save toggle; tap the hero glyph → stroke practice
     review.tsx               SM-2 flashcard session
 ```
 
@@ -107,6 +112,10 @@ src/
    long meanings at 4 columns; new SRS cards show "내일" on every grade button (correct
    SM-2 for a first review, but looks redundant); full 11,172-syllable Hangul font
    coverage is one flag away (`--all-hangul`, +2 MB/weight).
+
+7. Stroke order: no data for 屛 戱 玆 畓 (button hidden). 81 chars' stroke data
+   disagrees with the dictionary's `total_strokes` (glyph conventions, e.g. 成 6 vs 7);
+   practice uses the data's own count. Practice results aren't saved yet (could feed SRS).
 
 ## 4. Gotchas to remember
 

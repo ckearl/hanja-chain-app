@@ -227,4 +227,12 @@ export const sqliteSource: DataSource = {
     );
     return rows[0] && toChainWord(rows[0].word_ko, rows[0].hanja_form);
   },
+
+  async strokeOrder(hanja) {
+    const rows = await all<{ strokes: string; medians: string }>(
+      'SELECT strokes, medians FROM stroke_orders WHERE hanja = ?',
+      [hanja],
+    );
+    return rows[0] && { strokes: JSON.parse(rows[0].strokes), medians: JSON.parse(rows[0].medians) };
+  },
 };

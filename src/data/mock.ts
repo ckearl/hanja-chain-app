@@ -241,4 +241,8 @@ export const mockSource: DataSource = {
     const c = COMPOUNDS.find((x) => x.wordKo === wordKo);
     return c ? toChain(c) : undefined;
   },
+
+  async strokeOrder() {
+    return undefined; // no stroke fixtures
+  },
 };
