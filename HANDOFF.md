@@ -27,7 +27,7 @@ Two projects, one product:
 ## 2. Where the app stands
 
 **Built: all four tabs + Detail + flashcard review, on real data (on-device SQLite).**
-Work is on branch `overnight/features` (not merged to `main`, not pushed).
+Merged to `main` 2026-10-25 (not pushed).
 
 - Run it:
   ```bash
@@ -97,7 +97,6 @@ src/
 ## 3. Next steps (suggested order)
 
 1. **Run it and give design feedback** on the whole app (`npx expo start`, press `w`).
-   Then merge `overnight/features` into `main` when happy.
 2. **Test on a device/simulator.** Everything was verified on web only; Expo Go for
    SDK 58 may not be in the stores yet (see above).
 3. **Ranking**: compounds tie-break by id after common/English/length (no frequency
