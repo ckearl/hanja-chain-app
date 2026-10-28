@@ -23,7 +23,7 @@ import sys
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/projects/hanja-chain-data/hanja.sqlite')
+SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(ROOT), 'hanja-chain-data', 'hanja.sqlite')
 OUT = os.path.join(ROOT, 'assets', 'db', 'hanja.db')
 VERSION_TS = os.path.join(ROOT, 'src', 'data', 'dbVersion.ts')
 

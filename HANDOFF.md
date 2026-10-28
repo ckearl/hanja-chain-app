@@ -6,8 +6,8 @@ Two projects, one product:
 
 | Project | Path | Role |
 |---|---|---|
-| **Pipeline** (ETL) | `/Users/toph/projects/hanja-chain-data` | Scrapes/builds `hanja.sqlite` — the content database |
-| **App** (this repo) | `/Users/toph/projects/hanja-chain-app` | Expo / React Native learner app |
+| **Pipeline** (ETL) | `../hanja-chain-data` (separate repo) | Scrapes/builds `hanja.sqlite` — the content database |
+| **App** (this repo) | `.` | Expo / React Native learner app |
 
 ---
 
@@ -16,7 +16,7 @@ Two projects, one product:
 - **Done.** stdict scrape finished (415/415, 2026-06-03) and `hanja.sqlite` is built
   (117 MB: 1,799 chars, 312k compounds). Rebuild steps, if ever needed:
   ```bash
-  cd /Users/toph/projects/hanja-chain-data
+  cd ../hanja-chain-data
   python -m pipeline.bucket_and_merge --scope core
   python -m pipeline.build_sqlite     --scope core    # -> hanja.sqlite
   python -m pipeline.validate         --scope core
@@ -31,7 +31,6 @@ Merged to `main` 2026-10-25 (not pushed).
 
 - Run it:
   ```bash
-  cd /Users/toph/projects/hanja-chain-app
   npx expo start --clear     # then scan QR in Expo Go, or press w (web)
   ```
 - **Expo SDK 58** (RN 0.88, React 19.3) as of 2026-10-23. The store Expo Go build for
@@ -78,7 +77,7 @@ src/
   data/         types.ts (mirrors schema)  sqlite.ts  hangul.ts  mock.ts  index.ts
   data/user/    types.ts  sqlite.ts (user.db)  srs.ts (SM-2 + date math)
   hooks/        useQuery.ts (async)  useUserQuery.ts (re-runs on user-state changes)
-  components/   ui.tsx  CharacterCard.tsx  Placeholder.tsx
+  components/   ui.tsx  CharacterCard.tsx
   components/strokes/  StrokePractice.tsx (spin-in card, demo, tracing)
                        StrokeCanvas.tsx (svg)  geometry.ts (stroke matching)
   app/

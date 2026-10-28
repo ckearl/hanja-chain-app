@@ -1,56 +1,86 @@
-# Welcome to your Expo app 👋
+# 한자 체인 · Hanja Chain
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile app for learning **Hanja** (漢字, the Chinese characters used in Korean) the way
+they actually show up: inside everyday Korean words. Every word is a chain of
+characters, and every character links to more words. 학교 (學校, school) leads to 學,
+which leads to 입학 (入學, admission), which leads to 入…
 
-## Get started
+Built with Expo / React Native. Runs on iOS, Android and the web, fully offline.
 
-1. Install dependencies
+<p align="center">
+  <img src="docs/screenshots/daily.png" width="19%" alt="Daily home screen" />
+  <img src="docs/screenshots/detail.png" width="19%" alt="Character detail for 學" />
+  <img src="docs/screenshots/stroke-order.png" width="19%" alt="Stroke-order demo for 學" />
+  <img src="docs/screenshots/chains.png" width="19%" alt="Word chain from 학교" />
+  <img src="docs/screenshots/gallery.png" width="19%" alt="Character gallery" />
+</p>
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. Start the app
+- **Daily:** a character of the day, your streak, flashcards due, and a jump into Chains.
+- **Chains:** start from any word, tap a syllable to see other words sharing its Hanja,
+  and keep branching. A breadcrumb shows the path you took.
+- **Character detail:** meaning, readings, grade, radical, stroke count, and the words
+  that use it, ranked so common learner vocabulary comes first.
+- **Stroke-order practice:** the character spins into a card and its strokes fill in one
+  by one. Then you trace them with your finger, and each correct stroke fills in. Strokes
+  are checked for shape, direction and order.
+- **Gallery:** browse all 1,799 basic-education Hanja by initial consonant → vowel → syllable,
+  or just the ones you've saved.
+- **Search:** by Hanja, Korean, or English.
+- **Flashcards:** saved characters are scheduled with the SM-2 spaced-repetition algorithm.
 
-   ```bash
-   npx expo start
-   ```
+## How it works
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+hanja-chain-data (separate pipeline)          this repo
+────────────────────────────────────          ──────────────────────────────────────────
+scrape stdict + krdict, merge grade    ──►    scripts/build-local-db.py
+lists, Unihan → hanja.sqlite (117 MB)         trims to assets/db/hanja.db (16 MB) + stroke data
+                                                         │
+                                                         ▼
+                                              expo-sqlite (on device, read-only)
+                                                         │
+                                              src/data: DataSource interface
+                                                         │
+                                              screens (expo-router)   +   user.db (saved, streak, SRS)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- **Offline-first.** A trimmed dictionary ships inside the app: every character, every
+  learner-dictionary word, topped up to at least 12 words per character. Screens only talk to an async
+  `DataSource` interface, so a future API for the long tail can slot in without screen
+  changes.
+- **User state** (saved characters, history, streak, flashcard schedule) lives in a separate
+  writable SQLite database. Screens re-query live when it changes.
+- **Stroke matching** resamples your finger stroke and the reference median to the same
+  number of points. It then compares shape, start and end points, and direction, and picks
+  the closest remaining stroke so parallel strokes (三) can't be drawn out of order. See
+  [`src/components/strokes/geometry.ts`](src/components/strokes/geometry.ts).
+- **Typography:** a subset of Noto Serif CJK KR (only the glyphs the app can show) keeps the
+  Hanja crisp on every platform.
 
-### Other setup steps
+**Stack:** Expo SDK 58 · React Native 0.88 · React 19 · TypeScript · expo-router ·
+expo-sqlite · react-native-reanimated · react-native-svg
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Running it
 
-## Learn more
+```bash
+npm install
+npx expo start        # press w for web, or scan the QR code with Expo Go / a dev build
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+The dictionary database is committed, so the app runs as-is. To rebuild it you need the
+data pipeline's `hanja.sqlite` next to this repo (`../hanja-chain-data/`):
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+python3 scripts/build-local-db.py      # → assets/db/hanja.db (+ downloads stroke data once)
+python3 scripts/build-font-subset.py   # after the character set changes
+```
 
-## Join the community
+More detail on architecture, decisions and known gaps is in [`HANDOFF.md`](HANDOFF.md).
 
-Join our community of developers creating universal apps.
+## Credits & licenses
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Code: [MIT](LICENSE). The bundled dictionary data, stroke-order data and fonts come from
+the National Institute of Korean Language, 한국어문회, Unicode, animCJK, Make Me a Hanzi
+and Adobe/Google Noto, each under its own terms. See [`DATA-NOTICE.md`](DATA-NOTICE.md).
