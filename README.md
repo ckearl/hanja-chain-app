@@ -33,7 +33,7 @@ Built with Expo / React Native. Runs on iOS, Android and the web, fully offline.
 ## How it works
 
 ```
-hanja-chain-data (separate pipeline)          this repo
+hanja-chain-data (pipeline repo)              this repo
 ────────────────────────────────────          ──────────────────────────────────────────
 scrape stdict + krdict, merge grade    ──►    scripts/build-local-db.py
 lists, Unihan → hanja.sqlite (117 MB)         trims to assets/db/hanja.db (16 MB) + stroke data
@@ -69,8 +69,9 @@ npm install
 npx expo start        # press w for web, or scan the QR code with Expo Go / a dev build
 ```
 
-The dictionary database is committed, so the app runs as-is. To rebuild it you need the
-data pipeline's `hanja.sqlite` next to this repo (`../hanja-chain-data/`):
+The dictionary database is committed, so the app runs as-is. To rebuild it, build
+`hanja.sqlite` with the [data pipeline](https://github.com/ckearl/hanja-chain-data) in a
+sibling folder (`../hanja-chain-data/`), then:
 
 ```bash
 python3 scripts/build-local-db.py      # → assets/db/hanja.db (+ downloads stroke data once)

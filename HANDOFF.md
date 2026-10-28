@@ -6,8 +6,8 @@ Two projects, one product:
 
 | Project | Path | Role |
 |---|---|---|
-| **Pipeline** (ETL) | `../hanja-chain-data` (separate repo) | Scrapes/builds `hanja.sqlite` — the content database |
-| **App** (this repo) | `.` | Expo / React Native learner app |
+| **Pipeline** (ETL) | `../hanja-chain-data` ([github](https://github.com/ckearl/hanja-chain-data)) | Scrapes/builds `hanja.sqlite` — the content database |
+| **App** (this repo) | `.` ([github](https://github.com/ckearl/hanja-chain-app)) | Expo / React Native learner app |
 
 ---
 
